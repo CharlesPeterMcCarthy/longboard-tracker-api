@@ -6,11 +6,13 @@
     if (isset($info['API_KEY'])) {  // Check API key exists
       if ($info['API_KEY'] == "**5**") {   // Check API key mathces
         $speeds = $info['speeds'];
+        $sessionStart = GetStartTime($speeds);
+        $sessionEnd = GetEndTime();
 
         $conn = getConn();
         $conn->begin_transaction();
 
-        $response = SaveSession($conn, GetStartTime($speeds), GetEndTime());
+        $response = SaveSession($conn, $sessionStart, $sessionEnd);
 
         if ($response['isOk']) {
           $sessionID = $response['sessionID'];
@@ -19,6 +21,8 @@
         }
 
         if ($response['isOk']) {
+          $response = GetResponseData($speeds, $sessionStart, $sessionEnd);
+
           $conn->commit();
         } else {
           $conn->rollback();
@@ -116,6 +120,43 @@
     $stmt->close();
 
     return $response;
+  }
+
+  function GetResponseData($speeds, $sessionStart, $sessionEnd) {
+    return [
+      'sessionLength' => GetSessionLength($sessionStart, $sessionEnd),
+      'averageSpeed' => GetAverageSpeed($speeds),
+      'highestSpeed' => GetHighestSpeed($speeds)
+    ];
+  }
+
+      // Get the time in seconds between the start and the end of the skate session
+  function GetSessionLength($sessionStart, $sessionEnd) {
+    return date(strtotime($sessionEnd) - strtotime($sessionStart));
+  }
+
+      // Get the average speed from the skate session
+  function GetAverageSpeed($speeds) {
+    $total = 0;
+
+    foreach ($speeds as $speed) {
+      $total += $speed;
+    }
+
+    return ($total / count($speeds));
+  }
+
+      // Get the highest speed from the skate session
+  function GetHighestSpeed($speeds) {
+    $highestSpeed = 0;
+
+    foreach ($speeds as $speed) {
+      if ($speed > $highestSpeed) {
+        $highestSpeed = $speed;
+      }
+    }
+
+    return $highestSpeed;
   }
 
       // Get connection to remote MySQL Database
