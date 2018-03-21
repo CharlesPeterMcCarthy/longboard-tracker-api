@@ -4,15 +4,16 @@
 
   if ($info != NULL) {
     if (isset($info['API_KEY'])) {  // Check API key exists
-      if ($info['API_KEY'] == "**5**") {   // Check API key mathces
+      if ($info['API_KEY'] == "d581128856e29d64ea3878923a9ea95c") {   // Check API key mathces
         $speeds = $info['speeds'];
+        $distance = $info['distance'];
         $sessionStart = GetStartTime($speeds);
         $sessionEnd = GetEndTime();
 
         $conn = getConn();
         $conn->begin_transaction();
 
-        $response = SaveSession($conn, $sessionStart, $sessionEnd);
+        $response = SaveSession($conn, $sessionStart, $sessionEnd, $distance);
 
         if ($response['isOk']) {
           $sessionID = $response['sessionID'];
@@ -21,7 +22,7 @@
         }
 
         if ($response['isOk']) {
-          $response = GetResponseData($speeds, $sessionStart, $sessionEnd);
+          $response = GetResponseData($speeds, $sessionStart, $sessionEnd, $sessionID);
 
           $conn->commit();
         } else {
@@ -57,13 +58,14 @@
     echo json_encode($response);
   }
 
-  function SaveSession($conn, $sessionStart, $sessionEnd) {
+      // Save the parent skate session 'object'
+  function SaveSession($conn, $sessionStart, $sessionEnd, $distance) {
     $sql = "INSERT INTO skate_sessions
-      (session_start, session_end)
-      VALUES (?, ?)";
+      (session_start, session_end, session_distance)
+      VALUES (?, ?, ?)";
 
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ss", $sessionStart, $sessionEnd);
+    $stmt->bind_param("ssd", $sessionStart, $sessionEnd, $distance);
 
     $isOk = $stmt->execute();
 
@@ -83,8 +85,6 @@
         'isOk' => false,
         'displayError' => "Save Failed (1)"
       ];
-
-      break;
     }
 
     $stmt->close();
@@ -92,6 +92,7 @@
     return $response;
   }
 
+      // Save the individual skate logs relating to the skate session
   function SaveSpeeds($conn, $speeds, $sessionID) {
     $sql = "INSERT INTO skate_speeds
       (speed_kph, fk_session_id)
@@ -122,8 +123,9 @@
     return $response;
   }
 
-  function GetResponseData($speeds, $sessionStart, $sessionEnd) {
+  function GetResponseData($speeds, $sessionStart, $sessionEnd, $sessionID) {
     return [
+      'sessionID' => $sessionID,
       'sessionLength' => GetSessionLength($sessionStart, $sessionEnd),
       'averageSpeed' => GetAverageSpeed($speeds),
       'highestSpeed' => GetHighestSpeed($speeds)
@@ -132,7 +134,7 @@
 
       // Get the time in seconds between the start and the end of the skate session
   function GetSessionLength($sessionStart, $sessionEnd) {
-    return date(strtotime($sessionEnd) - strtotime($sessionStart));
+    return (int) date(strtotime($sessionEnd) - strtotime($sessionStart));
   }
 
       // Get the average speed from the skate session
@@ -143,7 +145,7 @@
       $total += $speed;
     }
 
-    return ($total / count($speeds));
+    return (float) number_format((float) ($total / count($speeds)), 2, '.', '');
   }
 
       // Get the highest speed from the skate session
@@ -161,10 +163,10 @@
 
       // Get connection to remote MySQL Database
   function getConn() {
-    $servername = "**1**";
-    $username = "**2**";
-    $password = "**3**";
-    $dbname = "**4**";
+    $servername = "mysql3792int.cp.blacknight.com";
+    $username = "u1452568_chazo";
+    $password = "w5zvZfvt";
+    $dbname = "db1452568_iot_yun";
 
     $conn = new mysqli($servername, $username, $password, $dbname); //Create connection
 
