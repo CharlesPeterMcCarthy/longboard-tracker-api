@@ -2,59 +2,89 @@
 
   $info = json_decode($HTTP_RAW_POST_DATA, true);
 
-  if ($info != NULL) {
-    if (isset($info['API_KEY'])) {  // Check API key exists
-      if ($info['API_KEY'] == "d581128856e29d64ea3878923a9ea95c") {   // Check API key mathces
-        $speeds = $info['speeds'];
-        $distance = $info['distance'];
-        $sessionStart = GetStartTime($speeds);
-        $sessionEnd = GetEndTime();
+  $isAllOk = true;
 
-        $conn = getConn();
-        $conn->begin_transaction();
-
-        $response = SaveSession($conn, $sessionStart, $sessionEnd, $distance);
-
-        if ($response['isOk']) {
-          $sessionID = $response['sessionID'];
-
-          $response = SaveSpeeds($conn, $speeds, $sessionID);
-        }
-
-        if ($response['isOk']) {
-          $response = GetResponseData($speeds, $sessionStart, $sessionEnd, $sessionID);
-
-          $conn->commit();
-        } else {
-          $conn->rollback();
-        }
-
-        $conn->close();
-
-        SendResponse($response);
-      } else {
-        // API key supplied does not match
-        SendResponse([
-          'isOk' => false,
-          'displayError' => "Invalid API KEY"
-        ]);
-      }
-    } else {
-      // No API key was supplied in JSON
-      SendResponse([
-        'isOk' => false,
-        'displayError' => "Missing API KEY"
-      ]);
-    }
-  } else {
+  if (!CheckDataExists($info)) {
     // No JSON info was supplied
-    SendResponse([
+    $response = [
       'isOk' => false,
       'displayError' => "No Info Supplied"
-    ]);
+    ];
+    $isAllOk = false;
   }
 
-  function SendResponse($response) {
+  if ($isAllOk && !CheckAPIKeyExists($info)) {
+    // No API key was supplied in JSON
+    $response = [
+      'isOk' => false,
+      'displayError' => "Missing API KEY"
+    ];
+    $isAllOk = false;
+  }
+
+  if ($isAllOk && !CheckAPIKey($info['API_KEY'])) {
+    // API key supplied does not match
+    $response = [
+      'isOk' => false,
+      'displayError' => "Invalid API KEY"
+    ];
+    $isAllOk = false;
+  }
+
+  if ($isAllOk && !CheckDeviceDetailsExist($info)) {
+    // Device name and/or device password was not supplied
+    $response = [
+      'isOk' => false,
+      'displayError' => "Missing Device Credentials"
+    ];
+    $isAllOk = false;
+  }
+
+  if ($isAllOk) {
+    $response = CheckDeviceDetails($info['deviceName'], $info['devicePass']);
+    $isAllOk = $response['isOk'];
+  }
+
+  if ($isAllOk && !CheckAllDataIsSupplied($info)) {
+    // Some data is missing
+    $response = [
+      'isOk' => false,
+      'displayError' => "Some Data Is Missing"
+    ];
+    $isAllOk = false;
+  }
+
+  if ($isAllOk) {
+    $speeds = $info['speeds'];
+    $distance = $info['distance'];
+    $sessionStart = GetStartTime($speeds);
+    $sessionEnd = GetEndTime();
+
+    $conn = getConn();
+    $conn->begin_transaction();
+
+    $response = SaveSession($conn, $sessionStart, $sessionEnd, $distance);
+
+    if ($response['isOk']) {
+      $sessionID = $response['sessionID'];
+
+      $response = SaveSpeeds($conn, $speeds, $sessionID);
+    }
+
+    if ($response['isOk']) {
+      $response = GetResponseData($speeds, $sessionStart, $sessionEnd, $sessionID);
+
+      $conn->commit();
+    } else {
+      $conn->rollback();
+    }
+
+    $conn->close();
+  }
+
+  SendResponse($response);
+
+  function SendResponse($response) {    // Return response data to Calling Script (Shell / Arduino)
     echo json_encode($response);
   }
 
@@ -163,10 +193,10 @@
 
       // Get connection to remote MySQL Database
   function getConn() {
-    $servername = "mysql3792int.cp.blacknight.com";
-    $username = "u1452568_chazo";
-    $password = "w5zvZfvt";
-    $dbname = "db1452568_iot_yun";
+    $servername = "{{SERVER_NAME}}";
+    $username = "{{USER_NAME}}";
+    $password = "{{PASSWORD}}";
+    $dbname = "{{DB_NAME}}";
 
     $conn = new mysqli($servername, $username, $password, $dbname); //Create connection
 
@@ -219,6 +249,63 @@
       // Get the current date-time
   function GetEndTime() {
     return date("Y-m-d H:i:s");
+  }
+
+  function CheckDataExists($info) {
+    return $info != NULL;
+  }
+
+  function CheckAPIKeyExists($info) {
+    return isset($info['API_KEY']);
+  }
+
+  function CheckAPIKey($apiKey) {
+    return $apiKey == "{{API_KEY}}";   // Place your API Key here
+  }
+
+  function CheckDeviceDetailsExist($info) {
+    return isset($info['deviceName']) && isset($info['devicePass']);
+  }
+
+      // Find matching device details in DB
+  function CheckDeviceDetails($deviceName, $devicePass) {
+    $conn = getConn();
+    $conn->begin_transaction();
+
+    $sql = "SELECT COUNT(*)
+      FROM approved_devices
+      WHERE device_name = ?
+      AND device_pass = ?";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ss", $deviceName, $devicePass);
+    $isOk = $stmt->execute();
+
+    if ($isOk) {
+      $stmt->bind_result($count);
+      $stmt->fetch();
+      $stmt->free_result();
+
+      $response = $count > 0 ? [
+        'isOk' => true
+      ] : [
+        'isOk' => false,
+        'displayError' => "Invalid Device Credentials"
+      ];
+    } else {
+      $response = [
+        'isOk' => false,
+        'displayError' => "Error Checking Stored Device Credentials"
+      ];
+    }
+
+    $conn->close();
+
+    return $response;
+  }
+
+  function CheckAllDataIsSupplied($info) {
+    return isset($info['speeds']) && isset($info['distance']);
   }
 
 ?>
