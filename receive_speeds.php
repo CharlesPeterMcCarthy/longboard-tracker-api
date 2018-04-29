@@ -76,8 +76,9 @@
     }
 
     if ($response['isOk']) {
-      SendAlertEmail($email, $sessionID, $deviceName, $deviceID);
       $response = GetResponseData($speeds, $sessionStart, $sessionEnd, $sessionID);
+      SendAlertEmail($email, $sessionID, $deviceName, $deviceID, $distance,
+        $response['sessionLength'], $response['averageSpeed'], $response['highestSpeed']);
 
       $conn->commit();
     } else {
@@ -159,18 +160,23 @@
   }
 
     // Send alert email to user
-  function SendAlertEmail($email, $sessionID, $deviceName, $deviceID) {
-    $headers = "MIME-Version: 1.0" . "\r\n";
-    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+  function SendAlertEmail($email, $sessionID, $deviceName, $deviceID, $distance, $sessionLength, $averageSpeed, $highestSpeed) {
+    $headers = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-type:text/html;charset=UTF-8\r\n";
     $headers .= "From: 'IoT Arduino Skate App' <charles@yourtakeout.ie>";
 
-    $subject = "Skate Session #" . $sessionID;
+    $subject = "Skate Session # $sessionID";
 
-    $message = "<h1>Your new skate session data from $deviceName is ready.</h1>\r\n";
-    $message .= "Click the following link to view your skate data.\r\n\n";
+    $message = "<h2>Your new skate session data from $deviceName is ready.</h2><br>";
+    $message .= "Here is a quick run down on the stats from your skate:<br>";
+    $message .= "Total Time: $sessionLength Seconds<br>";
+    $message .= "Total Distance: $distance KM<br>";
+    $message .= "Average Speed: $averageSpeed KM/H<br>";
+    $message .= "Highest Speed: $highestSpeed KM/H<br><br>";
+    $message .= "Click the following link to view your full skate data.<br><br>";
     $message .= "https://yourtakeout.ie/arduino/skate_sessions.php?sessionID=$sessionID&deviceID=$deviceID";
 
-    mail($email, $subject, $message, $headers);
+    mail($email, $subject, $message, $headers); // Send email
   }
 
   function GetResponseData($speeds, $sessionStart, $sessionEnd, $sessionID) {
@@ -213,10 +219,14 @@
 
       // Get connection to remote MySQL Database
   function getConn() {
-    $servername = "{{SERVER_NAME}}";
+    /*$servername = "{{SERVER_NAME}}";
     $username = "{{USER_NAME}}";
     $password = "{{PASSWORD}}";
-    $dbname = "{{DB_NAME}}";
+    $dbname = "{{DB_NAME}}";*/
+    $servername = "mysql3792int.cp.blacknight.com";
+    $username = "u1452568_chazo";
+    $password = "A3ORqsPP";
+    $dbname = "db1452568_iot_yun";
 
     $conn = new mysqli($servername, $username, $password, $dbname); //Create connection
 
@@ -280,7 +290,7 @@
   }
 
   function CheckAPIKey($apiKey) {
-    return $apiKey == "{{API_KEY}}";   // Place your API Key here
+    return $apiKey == "ccd112d869b0cd3e6fe6ae9e4d01b084";   // Place your API Key here
   }
 
   function CheckDeviceDetailsExist($info) {
