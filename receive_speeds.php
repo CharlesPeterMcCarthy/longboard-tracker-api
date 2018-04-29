@@ -42,7 +42,9 @@
 
   if ($isAllOk) {
     $response = CheckDeviceDetails($info['deviceName'], $info['devicePass']);
+    $deviceID = $response['deviceID'];
     $email = $response['email'];
+
     $isAllOk = $response['isOk'];
   }
 
@@ -65,7 +67,7 @@
     $conn = getConn();
     $conn->begin_transaction();
 
-    $response = SaveSession($conn, $sessionStart, $sessionEnd, $distance);
+    $response = SaveSession($conn, $sessionStart, $sessionEnd, $distance, $deviceID);
 
     if ($response['isOk']) {
       $sessionID = $response['sessionID'];
@@ -74,7 +76,7 @@
     }
 
     if ($response['isOk']) {
-      SendAlertEmail($email, $sessionID, $deviceName);
+      SendAlertEmail($email, $sessionID, $deviceName, $deviceID);
       $response = GetResponseData($speeds, $sessionStart, $sessionEnd, $sessionID);
 
       $conn->commit();
@@ -92,13 +94,13 @@
   }
 
       // Save the parent skate session 'object'
-  function SaveSession($conn, $sessionStart, $sessionEnd, $distance) {
+  function SaveSession($conn, $sessionStart, $sessionEnd, $distance, $deviceID) {
     $sql = "INSERT INTO skate_sessions
-      (session_start, session_end, session_distance)
-      VALUES (?, ?, ?)";
+      (session_start, session_end, session_distance, fk_device_id)
+      VALUES (?, ?, ?, ?)";
 
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ssd", $sessionStart, $sessionEnd, $distance);
+    $stmt->bind_param("ssdi", $sessionStart, $sessionEnd, $distance, $deviceID);
 
     $isOk = $stmt->execute();
 
@@ -157,16 +159,16 @@
   }
 
     // Send alert email to user
-  function SendAlertEmail($email, $sessionID, $deviceName) {
+  function SendAlertEmail($email, $sessionID, $deviceName, $deviceID) {
     $headers = "MIME-Version: 1.0" . "\r\n";
     $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
     $headers .= "From: 'IoT Arduino Skate App' <charles@yourtakeout.ie>";
 
     $subject = "Skate Session #" . $sessionID;
 
-    $message = "<h1>Your new skate session data is ready.</h1>\r\n";
+    $message = "<h1>Your new skate session data from $deviceName is ready.</h1>\r\n";
     $message .= "Click the following link to view your skate data.\r\n\n";
-    $message .= "https://yourtakeout.ie/arduino/skate_sessions.php?sessionID=$sessionID&deviceName=$deviceName";
+    $message .= "https://yourtakeout.ie/arduino/skate_sessions.php?sessionID=$sessionID&deviceID=$deviceID";
 
     mail($email, $subject, $message, $headers);
   }
@@ -211,14 +213,10 @@
 
       // Get connection to remote MySQL Database
   function getConn() {
-    /*$servername = "{{SERVER_NAME}}";
+    $servername = "{{SERVER_NAME}}";
     $username = "{{USER_NAME}}";
     $password = "{{PASSWORD}}";
-    $dbname = "{{DB_NAME}}";*/
-    $servername = "mysql3792int.cp.blacknight.com";
-    $username = "u1452568_chazo";
-    $password = "A3ORqsPP";
-    $dbname = "db1452568_iot_yun";
+    $dbname = "{{DB_NAME}}";
 
     $conn = new mysqli($servername, $username, $password, $dbname); //Create connection
 
@@ -282,7 +280,7 @@
   }
 
   function CheckAPIKey($apiKey) {
-    return $apiKey == "ccd112d869b0cd3e6fe6ae9e4d01b084";   // Place your API Key here
+    return $apiKey == "{{API_KEY}}";   // Place your API Key here
   }
 
   function CheckDeviceDetailsExist($info) {
@@ -294,7 +292,7 @@
     $conn = getConn();
     $conn->begin_transaction();
 
-    $sql = "SELECT email
+    $sql = "SELECT device_id, email
       FROM approved_devices
       WHERE device_name = ?
       AND device_pass = ?";
@@ -304,12 +302,13 @@
     $isOk = $stmt->execute();
 
     if ($isOk) {
-      $stmt->bind_result($email);
+      $stmt->bind_result($deviceID, $email);
       $stmt->fetch();
       $stmt->free_result();
 
       $response = $email !== "" ? [
         'isOk' => true,
+        'deviceID' => $deviceID,
         'email' => $email
       ] : [
         'isOk' => false,
