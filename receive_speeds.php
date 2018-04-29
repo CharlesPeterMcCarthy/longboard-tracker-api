@@ -219,14 +219,10 @@
 
       // Get connection to remote MySQL Database
   function getConn() {
-    /*$servername = "{{SERVER_NAME}}";
+    $servername = "{{SERVER_NAME}}";
     $username = "{{USER_NAME}}";
     $password = "{{PASSWORD}}";
-    $dbname = "{{DB_NAME}}";*/
-    $servername = "mysql3792int.cp.blacknight.com";
-    $username = "u1452568_chazo";
-    $password = "A3ORqsPP";
-    $dbname = "db1452568_iot_yun";
+    $dbname = "{{DB_NAME}}";
 
     $conn = new mysqli($servername, $username, $password, $dbname); //Create connection
 
@@ -290,7 +286,7 @@
   }
 
   function CheckAPIKey($apiKey) {
-    return $apiKey == "ccd112d869b0cd3e6fe6ae9e4d01b084";   // Place your API Key here
+    return $apiKey == "{{API_KEY}}";   // Place your API Key here
   }
 
   function CheckDeviceDetailsExist($info) {
