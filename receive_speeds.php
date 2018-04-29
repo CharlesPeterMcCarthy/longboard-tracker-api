@@ -42,6 +42,7 @@
 
   if ($isAllOk) {
     $response = CheckDeviceDetails($info['deviceName'], $info['devicePass']);
+    $email = $response['email'];
     $isAllOk = $response['isOk'];
   }
 
@@ -57,6 +58,7 @@
   if ($isAllOk) {
     $speeds = $info['speeds'];
     $distance = $info['distance'];
+    $deviceName = $info['deviceName'];
     $sessionStart = GetStartTime($speeds);
     $sessionEnd = GetEndTime();
 
@@ -72,6 +74,7 @@
     }
 
     if ($response['isOk']) {
+      SendAlertEmail($email, $sessionID, $deviceName);
       $response = GetResponseData($speeds, $sessionStart, $sessionEnd, $sessionID);
 
       $conn->commit();
@@ -153,6 +156,21 @@
     return $response;
   }
 
+    // Send alert email to user
+  function SendAlertEmail($email, $sessionID, $deviceName) {
+    $headers = "MIME-Version: 1.0" . "\r\n";
+    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+    $headers .= "From: 'IoT Arduino Skate App' <charles@yourtakeout.ie>";
+
+    $subject = "Skate Session #" . $sessionID;
+
+    $message = "<h1>Your new skate session data is ready.</h1>\r\n";
+    $message .= "Click the following link to view your skate data.\r\n\n";
+    $message .= "https://yourtakeout.ie/arduino/skate_sessions.php?sessionID=$sessionID&deviceName=$deviceName";
+
+    mail($email, $subject, $message, $headers);
+  }
+
   function GetResponseData($speeds, $sessionStart, $sessionEnd, $sessionID) {
     return [
       'sessionID' => $sessionID,
@@ -193,10 +211,14 @@
 
       // Get connection to remote MySQL Database
   function getConn() {
-    $servername = "{{SERVER_NAME}}";
+    /*$servername = "{{SERVER_NAME}}";
     $username = "{{USER_NAME}}";
     $password = "{{PASSWORD}}";
-    $dbname = "{{DB_NAME}}";
+    $dbname = "{{DB_NAME}}";*/
+    $servername = "mysql3792int.cp.blacknight.com";
+    $username = "u1452568_chazo";
+    $password = "A3ORqsPP";
+    $dbname = "db1452568_iot_yun";
 
     $conn = new mysqli($servername, $username, $password, $dbname); //Create connection
 
@@ -260,7 +282,7 @@
   }
 
   function CheckAPIKey($apiKey) {
-    return $apiKey == "{{API_KEY}}";   // Place your API Key here
+    return $apiKey == "ccd112d869b0cd3e6fe6ae9e4d01b084";   // Place your API Key here
   }
 
   function CheckDeviceDetailsExist($info) {
@@ -272,7 +294,7 @@
     $conn = getConn();
     $conn->begin_transaction();
 
-    $sql = "SELECT COUNT(*)
+    $sql = "SELECT email
       FROM approved_devices
       WHERE device_name = ?
       AND device_pass = ?";
@@ -282,12 +304,13 @@
     $isOk = $stmt->execute();
 
     if ($isOk) {
-      $stmt->bind_result($count);
+      $stmt->bind_result($email);
       $stmt->fetch();
       $stmt->free_result();
 
-      $response = $count > 0 ? [
-        'isOk' => true
+      $response = $email !== "" ? [
+        'isOk' => true,
+        'email' => $email
       ] : [
         'isOk' => false,
         'displayError' => "Invalid Device Credentials"
