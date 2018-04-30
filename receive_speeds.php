@@ -161,20 +161,36 @@
 
     // Send alert email to user
   function SendAlertEmail($email, $sessionID, $deviceName, $deviceID, $distance, $sessionLength, $averageSpeed, $highestSpeed) {
+    $BASE_URL = "{{BASE_URL}}";    // Place URL to skate_sessions.php page here
+    $URL = $BASE_URL . "?sessionID=$sessionID&deviceID=$deviceID";
+
     $headers = "MIME-Version: 1.0\r\n";
     $headers .= "Content-type:text/html;charset=UTF-8\r\n";
     $headers .= "From: 'IoT Arduino Skate App' <charles@yourtakeout.ie>";
 
     $subject = "Skate Session # $sessionID";
 
-    $message = "<h2>Your new skate session data from $deviceName is ready.</h2><br>";
-    $message .= "Here is a quick run down on the stats from your skate:<br>";
-    $message .= "Total Time: $sessionLength Seconds<br>";
-    $message .= "Total Distance: $distance KM<br>";
-    $message .= "Average Speed: $averageSpeed KM/H<br>";
-    $message .= "Highest Speed: $highestSpeed KM/H<br><br>";
-    $message .= "Click the following link to view your full skate data.<br><br>";
-    $message .= "https://yourtakeout.ie/arduino/skate_sessions.php?sessionID=$sessionID&deviceID=$deviceID";
+    $message = "<div style='background-color:#eee;padding:10px 10px 5px 10px'>";
+      $message .= "<div style='font-family:Verdana;font-size:14px;background-color:#a2c2d8;padding:30px;border-radius:4px;'>";
+        $message .= "<h1 style='text-align:center'>Your new skate session data from $deviceName is ready.</h1><br>";
+        $message .= "<div style='width:100%;height:2px;background-color:#555;margin-bottom:20px;'></div>";
+        $message .= "Here is a quick run down on the stats from your skate:<br>";
+        $message .= "<ul>";
+          $message .= "<li>Total Time: $sessionLength Seconds</li>";
+          $message .= "<li>Total Distance: $distance KM</li>";
+          $message .= "<li>Average Speed: $averageSpeed KM/H</li>";
+          $message .= "<li>Highest Speed: $highestSpeed KM/H</li>";
+        $message .= "</ul>";
+        $message .= "Click the following link to view your full skate data.<br><br>";
+        $message .= "<div style='text-align:center'>";
+          $message .= "<a href='$URL' style='background-color:#555;padding:8px 12px;border-radius:4px;color:white;
+            text-decoration:none;font-weight:bold;font-size:18px;display:block'>Skate Session #$sessionID</a>";
+        $message .= "</div>";
+      $message .= "</div>";
+      $message .= "<div style='text-align:center;color:#555;margin-top:20px;'>";
+        $message .= "<small>Arduino Longboard Project</small>";
+      $message .= "</div>";
+    $message .= "</div>";
 
     mail($email, $subject, $message, $headers); // Send email
   }
