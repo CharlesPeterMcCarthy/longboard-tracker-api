@@ -2,7 +2,7 @@
 PHP ReST API used to receive skate session data from an Arduino Device.
 
 ## How It Works
-- The Arduino Device calls up a Shell Script (found here: https://github.com/CharlesPeterMcCarthy/longboard_shell_script)
+- The Arduino Device calls up a Shell Script (found here: [Shell Script Repo](https://github.com/CharlesPeterMcCarthy/longboard_shell_script))
 - JSON data is received in this script
 - The data recevied must have:
   - API Key (Must match stored API Key)
