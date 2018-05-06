@@ -36,3 +36,8 @@ PHP ReST API used to receive skate session data from an Arduino Device.
 - Change `{{BASE_URL}}` to the URL of the `skate_sessions.php` web page
 - Change `{{SENDER_EMAIL}}` to the email address used to send the email to the user
 - Change `{{API_KEY}}` to the required API key
+
+
+*Screenshot of the email sent to the user*
+
+![Email Image](images/email.png?raw=true "Email Image")
