@@ -34,4 +34,5 @@ PHP ReST API used to receive skate session data from an Arduino Device.
 - Change `{{PASSWORD}}` to the MySQL User Password
 - Change `{{DB_NAME}}` to the MySQL Database Name
 - Change `{{BASE_URL}}` to the URL of the `skate_sessions.php` web page
+- Change `{{SENDER_EMAIL}}` to the email address used to send the email to the user
 - Change `{{API_KEY}}` to the required API key
