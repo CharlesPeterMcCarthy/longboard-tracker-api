@@ -64,6 +64,8 @@
     $sessionStart = GetStartTime($speeds);
     $sessionEnd = GetEndTime();
 
+    include_once "db_conn.php";
+
     $conn = getConn();
     $conn->begin_transaction();
 
@@ -233,22 +235,6 @@
     return $highestSpeed;
   }
 
-      // Get connection to remote MySQL Database
-  function getConn() {
-    $servername = "{{SERVER_NAME}}";
-    $username = "{{USER_NAME}}";
-    $password = "{{PASSWORD}}";
-    $dbname = "{{DB_NAME}}";
-
-    $conn = new mysqli($servername, $username, $password, $dbname); //Create connection
-
-    if ($conn->connect_error) { //Check connection
-        die("Connection failed: " . $conn->connect_error);
-    }
-
-    return $conn;
-  }
-
       // Used to retrieve the skate session ID
   function GetLastID($conn) {
     $sql = "SELECT LAST_INSERT_ID()";
@@ -311,6 +297,8 @@
 
       // Find matching device details in DB
   function CheckDeviceDetails($deviceName, $devicePass) {
+    include_once "db_conn.php";
+
     $conn = getConn();
     $conn->begin_transaction();
 
