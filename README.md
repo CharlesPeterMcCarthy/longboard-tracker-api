@@ -1,5 +1,5 @@
 # longboard_api
-PHP ReST API used to receive skate session data from an Arduino Device.
+PHP ReST API used to receive skate session data from an Arduino Device and to supply/receive information from the React Native App.
 
 ## How To Set Up
   - Before you continue, you should have followed the steps to setting up the [MySQL Database](https://github.com/CharlesPeterMcCarthy/longboard_arduino)
@@ -8,18 +8,20 @@ PHP ReST API used to receive skate session data from an Arduino Device.
   - Place these files on a remote web server
 
 ### To Use
-**receive_speeds.php**
+**api/db_conn.php**
   - Change `{{SERVER_NAME}}` to the Server Name
   - Change `{{USER_NAME}}` to the MySQL User Name
   - Change `{{PASSWORD}}` to the MySQL User Password
   - Change `{{DB_NAME}}` to the MySQL Database Name
+
+**api/receive_speeds.php**
   - Change `{{BASE_URL}}` to the URL of the `skate_sessions.php` web page
   - Change `{{SENDER_EMAIL}}` to the email address used to send the email to the user
   - Change `{{API_KEY}}` to the required API key
 
 ## How It Works
   - The Arduino Device calls up a Shell Script (found here: [Shell Script Repo](https://github.com/CharlesPeterMcCarthy/longboard_shell_script))
-  - JSON data is received in this script
+  - JSON data is received in `api/receive_speeds.php`
   - The data recevied must have:
     - API Key (Must match stored API Key)
     - Device Credentials (Name & Pass)
@@ -43,6 +45,11 @@ PHP ReST API used to receive skate session data from an Arduino Device.
     - Highest speed
     - A link to view more in-depth info on the skate session
   - Response is returned to Shell Script (on Arduino)
+
+  - The [React Native App](https://github.com/CharlesPeterMcCarthy/longboard-tracker-react-native-app) uses:
+    - `api/login.php`
+    - `api/get_sessions.php`
+    - `api/get_speeds.php`
 
 
 *Screenshot of the email sent to the user*
