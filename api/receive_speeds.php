@@ -42,8 +42,10 @@
 
   if ($isAllOk) {
     $response = CheckDeviceDetails($info['deviceName'], $info['devicePass']);
-    $deviceID = $response['deviceID'];
-    $email = $response['email'];
+    if ($response['isOk']) {
+      $deviceID = $response['deviceID'];
+      $email = $response['email'];
+    }
 
     $isAllOk = $response['isOk'];
   }
@@ -58,7 +60,7 @@
   }
 
   if ($isAllOk) {
-    $speeds = $info['speeds'];
+    $speeds = explode(',', $info['speeds']);
     $distance = $info['distance'];
     $deviceName = $info['deviceName'];
     $sessionStart = GetStartTime($speeds);
@@ -316,7 +318,7 @@
       $stmt->fetch();
       $stmt->free_result();
 
-      $response = $email !== "" ? [
+      $response = $email !== NULL ? [
         'isOk' => true,
         'deviceID' => $deviceID,
         'email' => $email
